@@ -7,10 +7,11 @@ export const generateQuizQuestions = async (
   questionCount: number,
   types: QuestionType[]
 ): Promise<Question[]> => {
+  // Αρχικοποίηση εντός της συνάρτησης για να έχουμε το σωστό process.env.API_KEY μετά την επιλογή του χρήστη
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
   
   const typeDescriptions = types.map(t => {
-    if (t === QuestionType.TRUE_FALSE) return "Σωστό/Λάθος (Η απάντηση ΠΡΕΠΕΙ να είναι ['Σωστό'] ή ['Λάθος'])";
+    if (t === QuestionType.TRUE_FALSE) return "Σωστό/Λάθος (Η απάντηση πρέπει να είναι ['Σωστό'] ή ['Λάθος'])";
     if (t === QuestionType.MULTIPLE_CHOICE) return "Πολλαπλής Επιλογής (Μπορεί να έχει μία ή περισσότερες σωστές απαντήσεις)";
     if (t === QuestionType.SINGLE_CHOICE) return "Μοναδικής Επιλογής (Ακριβώς μία σωστή απάντηση)";
     if (t === QuestionType.FILL_BLANKS) return "Συμπλήρωση Κενών (Ο χρήστης επιλέγει τη σωστή λέξη για το κενό [____])";
@@ -25,9 +26,9 @@ export const generateQuizQuestions = async (
     "${content}"
     
     Σημαντικοί Κανόνες:
-    1. Το πεδίο correctAnswer ΠΡΕΠΕΙ να είναι ΠΙΝΑΚΑΣ (ARRAY) από strings, ακόμη και αν υπάρχει μόνο μία σωστή απάντηση.
+    1. Το πεδίο correctAnswer ΠΡΕΠΕΙ να είναι ΠΙΝΑΚΑΣ (ARRAY) από strings.
     2. Για τον τύπο TRUE_FALSE, το correctAnswer πρέπει να είναι ["Σωστό"] ή ["Λάθος"].
-    3. Για τον τύπο MULTIPLE_CHOICE, συμπεριέλαβε στον πίνακα όλες τις ορθές επιλογές.
+    3. Για τον τύπο MULTIPLE_CHOICE, ο πίνακας πρέπει να περιέχει όλες τις σωστές επιλογές.
     4. Επίστρεψε τις ερωτήσεις αυστηρά σε μορφή JSON. 
   `;
 
@@ -54,7 +55,7 @@ export const generateQuizQuestions = async (
             correctAnswer: { 
               type: Type.ARRAY,
               items: { type: Type.STRING },
-              description: "Λίστα με τις σωστές απαντήσεις. Πάντα πίνακας."
+              description: "Λίστα με τις σωστές απαντήσεις."
             },
             explanation: { type: Type.STRING }
           },
@@ -69,6 +70,6 @@ export const generateQuizQuestions = async (
     return JSON.parse(text);
   } catch (error) {
     console.error("Failed to parse Gemini response:", error);
-    throw new Error("Σφάλμα κατά τη δημιουργία των ερωτήσεων. Δοκιμάστε ξανά.");
+    throw new Error("Σφάλμα κατά την ανάλυση της απάντησης του AI. Δοκιμάστε ξανά.");
   }
 };

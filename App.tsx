@@ -13,37 +13,37 @@ const App: React.FC = () => {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [apiKeyMissing, setApiKeyMissing] = useState(false);
+  const [apiKeyReady, setApiKeyReady] = useState(false);
 
   useEffect(() => {
-    const checkKey = async () => {
+    const initApp = async () => {
+      // Έλεγχος αν υπάρχει επιλεγμένο κλειδί
       if (window.aistudio) {
         const hasKey = await window.aistudio.hasSelectedApiKey();
-        if (!hasKey && !process.env.API_KEY) {
-          setApiKeyMissing(true);
+        setApiKeyReady(hasKey || Boolean(process.env.API_KEY));
+      }
+
+      const savedLessons = localStorage.getItem('qm_lessons');
+      const savedUser = localStorage.getItem('qm_user');
+      
+      if (savedLessons) {
+        try {
+          setLessons(JSON.parse(savedLessons));
+        } catch (e) {
+          console.error("Error loading lessons", e);
         }
       }
+      if (savedUser) {
+        try {
+          setUser(JSON.parse(savedUser));
+        } catch (e) {
+          console.error("Error loading user", e);
+        }
+      }
+      setLoading(false);
     };
-    checkKey();
 
-    const savedLessons = localStorage.getItem('qm_lessons');
-    const savedUser = localStorage.getItem('qm_user');
-    
-    if (savedLessons) {
-      try {
-        setLessons(JSON.parse(savedLessons));
-      } catch (e) {
-        console.error("Error loading lessons", e);
-      }
-    }
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (e) {
-        console.error("Error loading user", e);
-      }
-    }
-    setLoading(false);
+    initApp();
   }, []);
 
   useEffect(() => {
@@ -55,8 +55,7 @@ const App: React.FC = () => {
   const handleOpenKeyDialog = async () => {
     if (window.aistudio?.openSelectKey) {
       await window.aistudio.openSelectKey();
-      setApiKeyMissing(false);
-      // Δεν χρειάζεται reload, το process.env.API_KEY θα ενημερωθεί εσωτερικά
+      setApiKeyReady(true);
     }
   };
 
@@ -79,9 +78,7 @@ const App: React.FC = () => {
   };
 
   const deleteLesson = (id: string) => {
-    if (confirm('Είστε σίγουροι ότι θέλετε να διαγράψετε αυτό το μάθημα;')) {
-      setLessons(prev => prev.filter(l => l.id !== id));
-    }
+    setLessons(prev => prev.filter(l => l.id !== id));
   };
 
   if (loading) return (
@@ -93,16 +90,15 @@ const App: React.FC = () => {
   return (
     <HashRouter>
       <div className="min-h-screen flex flex-col relative">
-        {apiKeyMissing && (
-          <div className="bg-amber-600 text-white p-2 text-center text-xs font-bold z-[100] flex justify-center items-center gap-4">
-            <span>Απαιτείται API Key για τη λειτουργία του AI (Gemini).</span>
+        {!apiKeyReady && (
+          <div className="bg-amber-500 text-white p-2 text-center text-xs font-bold z-[100] flex justify-center items-center gap-4">
+            <span>Απαιτείται API Key για τη λειτουργία του AI.</span>
             <button 
               onClick={handleOpenKeyDialog}
-              className="bg-white text-amber-600 px-3 py-1 rounded-full hover:bg-amber-50 transition-colors"
+              className="bg-white text-amber-600 px-3 py-1 rounded-full hover:bg-amber-50 transition-colors shadow-sm"
             >
               Επιλογή Κλειδιού
             </button>
-            <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" className="underline opacity-80">Billing Docs</a>
           </div>
         )}
         
@@ -135,8 +131,8 @@ const App: React.FC = () => {
           </Routes>
         </main>
 
-        <footer className="bg-white border-t py-6 text-center text-slate-500 text-sm">
-          <p>&copy; {new Date().getFullYear()} QuizMaster AI - Εκπαιδευτική Πλατφόρμα</p>
+        <footer className="bg-white border-t py-6 text-center text-slate-400 text-sm">
+          <p>&copy; {new Date().getFullYear()} QuizMaster AI - Educational Platform</p>
         </footer>
       </div>
     </HashRouter>
