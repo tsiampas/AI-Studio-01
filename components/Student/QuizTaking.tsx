@@ -41,15 +41,16 @@ const QuizTaking: React.FC<QuizTakingProps> = ({ lessons }) => {
     const currentAnswers = answers[currentQuestion.id];
 
     if (currentQuestion.type === QuestionType.MULTIPLE_CHOICE) {
-      // Logic for multi-select
-      const selectedList = Array.isArray(currentAnswers) ? [...currentAnswers] : [];
+      // Λογική για πολλαπλή επιλογή (array)
+      let selectedList = Array.isArray(currentAnswers) ? [...currentAnswers] : [];
       if (selectedList.includes(answer)) {
-        setAnswers({ ...answers, [currentQuestion.id]: selectedList.filter(a => a !== answer) });
+        selectedList = selectedList.filter(a => a !== answer);
       } else {
-        setAnswers({ ...answers, [currentQuestion.id]: [...selectedList, answer] });
+        selectedList.push(answer);
       }
+      setAnswers({ ...answers, [currentQuestion.id]: selectedList });
     } else {
-      // Logic for single-select
+      // Λογική για μοναδική επιλογή
       setAnswers({ ...answers, [currentQuestion.id]: answer });
     }
   };
@@ -70,10 +71,10 @@ const QuizTaking: React.FC<QuizTakingProps> = ({ lessons }) => {
       let correctAnswer = q.correctAnswer;
 
       if (q.type === QuestionType.MULTIPLE_CHOICE) {
-        // Compare arrays for multiple choice
-        const userArr = Array.isArray(userAnswer) ? [...userAnswer].sort() : [userAnswer].sort();
-        const correctArr = Array.isArray(correctAnswer) ? [...correctAnswer].sort() : [correctAnswer].sort();
-        if (JSON.stringify(userArr) === JSON.stringify(correctArr)) {
+        // Σύγκριση πινάκων για πολλαπλή επιλογή
+        const userArr = Array.isArray(userAnswer) ? [...userAnswer].sort() : (userAnswer ? [userAnswer].sort() : []);
+        const correctArr = Array.isArray(correctAnswer) ? [...correctAnswer].sort() : (correctAnswer ? [correctAnswer].sort() : []);
+        if (userArr.length > 0 && JSON.stringify(userArr) === JSON.stringify(correctArr)) {
           correctCount++;
         }
       } else if (q.type === QuestionType.TRUE_FALSE) {
@@ -156,7 +157,7 @@ const QuizTaking: React.FC<QuizTakingProps> = ({ lessons }) => {
         </h2>
 
         <div className="space-y-3">
-          {/* Options for Non-True/False questions */}
+          {/* Επιλογές για όλους τους τύπους εκτός TRUE_FALSE */}
           {currentQuestion.type !== QuestionType.TRUE_FALSE && currentQuestion.options?.map((option, idx) => {
             const isSelected = currentQuestion.type === QuestionType.MULTIPLE_CHOICE
               ? (Array.isArray(userSelection) && userSelection.includes(option))
@@ -172,15 +173,15 @@ const QuizTaking: React.FC<QuizTakingProps> = ({ lessons }) => {
                     : 'border-slate-100 bg-slate-50 hover:border-slate-300 text-slate-700'
                 }`}
               >
-                <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${
-                  isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-300'
-                } ${currentQuestion.type === QuestionType.MULTIPLE_CHOICE ? 'rounded' : 'rounded-full'}`}>
+                <div className={`w-6 h-6 border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                  isSelected ? 'border-blue-600 bg-blue-600 shadow-sm' : 'border-slate-300'
+                } ${currentQuestion.type === QuestionType.MULTIPLE_CHOICE ? 'rounded-md' : 'rounded-full'}`}>
                   {isSelected && (
                     <div className={currentQuestion.type === QuestionType.MULTIPLE_CHOICE 
-                      ? "w-3 h-3 text-white flex items-center justify-center" 
+                      ? "text-white text-[10px] font-bold" 
                       : "w-2 h-2 bg-white rounded-full"
                     }>
-                      {currentQuestion.type === QuestionType.MULTIPLE_CHOICE && "✓"}
+                      {currentQuestion.type === QuestionType.MULTIPLE_CHOICE ? "✓" : ""}
                     </div>
                   )}
                 </div>
@@ -189,7 +190,7 @@ const QuizTaking: React.FC<QuizTakingProps> = ({ lessons }) => {
             );
           })}
 
-          {/* Special UI for TRUE_FALSE */}
+          {/* Ειδική εμφάνιση για Σωστό / Λάθος */}
           {currentQuestion.type === QuestionType.TRUE_FALSE && (
             <div className="grid grid-cols-2 gap-4">
               {['Σωστό', 'Λάθος'].map((val) => {
@@ -217,7 +218,7 @@ const QuizTaking: React.FC<QuizTakingProps> = ({ lessons }) => {
           disabled={!isAnswered}
           className={`w-full py-4 rounded-2xl font-bold transition-all shadow-lg flex items-center justify-center ${
             isAnswered 
-              ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-100' 
+              ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-100 active:scale-[0.98]' 
               : 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
           }`}
         >
