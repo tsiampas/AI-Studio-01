@@ -51,7 +51,18 @@ const LessonEditor: React.FC<LessonEditorProps> = ({ lessons, onSave }) => {
   };
 
   const handleGenerateAIQuiz = async () => {
-    // Αν δεν υπάρχει κείμενο στο ειδικό πεδίο, χρησιμοποιούμε το περιεχόμενο του μαθήματος
+    // Έλεγχος API Key πριν την κλήση
+    if (!process.env.API_KEY) {
+      if (window.aistudio?.openSelectKey) {
+        alert("Απαιτείται API Key. Παρακαλώ επιλέξτε ένα κλειδί στο παράθυρο που θα ανοίξει.");
+        await window.aistudio.openSelectKey();
+        // Μετά το άνοιγμα του διαλόγου, υποθέτουμε επιτυχία και συνεχίζουμε
+      } else {
+        alert("Το API Key λείπει. Παρακαλώ ρυθμίστε το περιβάλλον σας.");
+        return;
+      }
+    }
+
     const contentToUse = quizPrompt || description;
     
     if (!contentToUse) {
@@ -70,10 +81,15 @@ const LessonEditor: React.FC<LessonEditorProps> = ({ lessons, onSave }) => {
       };
       setQuizzes(prev => [...prev, newQuiz]);
       setQuizPrompt('');
-      alert(`Το κουίζ δημιουργήθηκε! Πατήστε "Αποθήκευση Μαθήματος" στο τέλος για να μη χαθεί.`);
-    } catch (error) {
+      alert(`Το κουίζ δημιουργήθηκε επιτυχώς!`);
+    } catch (error: any) {
       console.error(error);
-      alert('Αποτυχία δημιουργίας κουίζ. Ελέγξτε το περιεχόμενο.');
+      if (error.message?.includes("Requested entity was not found")) {
+        alert("Το API Key δεν είναι έγκυρο ή ανήκει σε μη υποστηριζόμενο project. Δοκιμάστε να επιλέξετε ξανά κλειδί.");
+        window.aistudio?.openSelectKey();
+      } else {
+        alert('Αποτυχία δημιουργίας κουίζ. Ελέγξτε τη σύνδεσή σας και το API Key.');
+      }
     } finally {
       setIsGenerating(false);
     }
@@ -115,7 +131,6 @@ const LessonEditor: React.FC<LessonEditorProps> = ({ lessons, onSave }) => {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
-        {/* Basic Info & Content */}
         <div className="bg-white p-6 rounded-2xl border shadow-sm space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -143,7 +158,6 @@ const LessonEditor: React.FC<LessonEditorProps> = ({ lessons, onSave }) => {
           
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-1">Περιεχόμενο Μαθήματος (Κείμενο)</label>
-            <p className="text-xs text-slate-400 mb-2">Επικολλήστε εδώ το κείμενο που θα διαβάσουν οι μαθητές.</p>
             <textarea
               value={description}
               onChange={e => setDescription(e.target.value)}
@@ -153,7 +167,6 @@ const LessonEditor: React.FC<LessonEditorProps> = ({ lessons, onSave }) => {
           </div>
         </div>
 
-        {/* External Links */}
         <div className="bg-white p-6 rounded-2xl border shadow-sm space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-lg font-bold">Χρήσιμοι Σύνδεσμοι</h2>
@@ -186,7 +199,6 @@ const LessonEditor: React.FC<LessonEditorProps> = ({ lessons, onSave }) => {
           )}
         </div>
 
-        {/* AI Quiz Generator */}
         <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100 shadow-sm space-y-4">
           <div className="flex items-center gap-2 border-b border-blue-200 pb-2">
             <Icons.Brain />
@@ -199,7 +211,7 @@ const LessonEditor: React.FC<LessonEditorProps> = ({ lessons, onSave }) => {
               value={quizPrompt}
               onChange={e => setQuizPrompt(e.target.value)}
               className="w-full px-4 py-2 border border-blue-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 h-32 bg-white"
-              placeholder="Αφήστε το κενό για να χρησιμοποιηθεί το κείμενο του μαθήματος παραπάνω, ή επικολλήστε νέο κείμενο εδώ..."
+              placeholder="Αφήστε το κενό για να χρησιμοποιηθεί το κείμενο του μαθήματος..."
             />
           </div>
 
@@ -251,7 +263,7 @@ const LessonEditor: React.FC<LessonEditorProps> = ({ lessons, onSave }) => {
 
           {quizzes.length > 0 && (
             <div className="space-y-2 mt-4">
-              <h3 className="text-sm font-bold text-blue-900">Έτοιμα Κουίζ στο Μάθημα:</h3>
+              <h3 className="text-sm font-bold text-blue-900">Έτοιμα Κουίζ:</h3>
               {quizzes.map((q) => (
                 <div key={q.id} className="flex items-center justify-between bg-white p-3 rounded-xl border border-blue-100">
                   <span className="text-sm font-bold">{q.title}</span>

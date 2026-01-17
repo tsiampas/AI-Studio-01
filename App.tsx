@@ -16,10 +16,15 @@ const App: React.FC = () => {
   const [apiKeyMissing, setApiKeyMissing] = useState(false);
 
   useEffect(() => {
-    // Έλεγχος αν υπάρχει το API Key
-    if (!process.env.API_KEY) {
-      setApiKeyMissing(true);
-    }
+    const checkKey = async () => {
+      if (window.aistudio) {
+        const hasKey = await window.aistudio.hasSelectedApiKey();
+        if (!hasKey && !process.env.API_KEY) {
+          setApiKeyMissing(true);
+        }
+      }
+    };
+    checkKey();
 
     const savedLessons = localStorage.getItem('qm_lessons');
     const savedUser = localStorage.getItem('qm_user');
@@ -50,7 +55,8 @@ const App: React.FC = () => {
   const handleOpenKeyDialog = async () => {
     if (window.aistudio?.openSelectKey) {
       await window.aistudio.openSelectKey();
-      window.location.reload(); // Ανανέωση για να πάρει το νέο κλειδί
+      setApiKeyMissing(false);
+      // Δεν χρειάζεται reload, το process.env.API_KEY θα ενημερωθεί εσωτερικά
     }
   };
 
@@ -89,13 +95,14 @@ const App: React.FC = () => {
       <div className="min-h-screen flex flex-col relative">
         {apiKeyMissing && (
           <div className="bg-amber-600 text-white p-2 text-center text-xs font-bold z-[100] flex justify-center items-center gap-4">
-            <span>Απαιτείται API Key για τη λειτουργία του AI.</span>
+            <span>Απαιτείται API Key για τη λειτουργία του AI (Gemini).</span>
             <button 
               onClick={handleOpenKeyDialog}
               className="bg-white text-amber-600 px-3 py-1 rounded-full hover:bg-amber-50 transition-colors"
             >
               Επιλογή Κλειδιού
             </button>
+            <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" className="underline opacity-80">Billing Docs</a>
           </div>
         )}
         

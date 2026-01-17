@@ -41,6 +41,7 @@ const QuizTaking: React.FC<QuizTakingProps> = ({ lessons }) => {
     const currentAnswers = answers[currentQuestion.id];
 
     if (currentQuestion.type === QuestionType.MULTIPLE_CHOICE) {
+      // Λογική για πολλαπλή επιλογή (επιλογή/αποεπιλογή σε array)
       let selectedList = Array.isArray(currentAnswers) ? [...currentAnswers] : [];
       if (selectedList.includes(answer)) {
         selectedList = selectedList.filter(a => a !== answer);
@@ -49,6 +50,7 @@ const QuizTaking: React.FC<QuizTakingProps> = ({ lessons }) => {
       }
       setAnswers({ ...answers, [currentQuestion.id]: selectedList });
     } else {
+      // Λογική για μοναδική επιλογή
       setAnswers({ ...answers, [currentQuestion.id]: answer });
     }
   };
@@ -66,16 +68,18 @@ const QuizTaking: React.FC<QuizTakingProps> = ({ lessons }) => {
     let correctCount = 0;
     quiz.questions.forEach(q => {
       const userAnswer = answers[q.id];
-      const correctAnswer = q.correctAnswer; // Πλέον αναμένουμε πίνακα από το API
+      const correctAnswer = q.correctAnswer;
 
       if (q.type === QuestionType.MULTIPLE_CHOICE) {
+        // Σύγκριση πινάκων για πολλαπλή επιλογή
         const userArr = Array.isArray(userAnswer) ? [...userAnswer].sort() : (userAnswer ? [userAnswer].sort() : []);
         const correctArr = Array.isArray(correctAnswer) ? [...correctAnswer].sort() : (correctAnswer ? [correctAnswer].sort() : []);
+        
         if (userArr.length > 0 && JSON.stringify(userArr) === JSON.stringify(correctArr)) {
           correctCount++;
         }
       } else {
-        // Για μοναδική επιλογή ή Σ/Λ, συγκρίνουμε την επιλογή με το πρώτο στοιχείο του πίνακα σωστών
+        // Για μοναδική επιλογή ή Σ/Λ
         const singleCorrect = Array.isArray(correctAnswer) ? correctAnswer[0] : correctAnswer;
         if (userAnswer === singleCorrect) {
           correctCount++;
@@ -187,7 +191,7 @@ const QuizTaking: React.FC<QuizTakingProps> = ({ lessons }) => {
         <button
           onClick={handleNext}
           disabled={!isAnswered}
-          className={`w-full py-4 rounded-2xl font-bold transition-all shadow-md ${
+          className={`w-full py-4 rounded-2xl font-bold transition-all shadow-md active:scale-[0.99] ${
             isAnswered ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-slate-100 text-slate-400 cursor-not-allowed'
           }`}
         >
