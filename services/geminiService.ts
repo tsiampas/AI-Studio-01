@@ -10,10 +10,10 @@ export const generateQuizQuestions = async (
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
   
   const typeDescriptions = types.map(t => {
-    if (t === QuestionType.TRUE_FALSE) return "Σωστό/Λάθος (ΥΠΟΧΡΕΩΤΙΚΑ η απάντηση πρέπει να είναι 'Σωστό' ή 'Λάθος')";
-    if (t === QuestionType.MULTIPLE_CHOICE) return "Πολλαπλής Επιλογής (πολλές σωστές)";
-    if (t === QuestionType.SINGLE_CHOICE) return "Μοναδικής Επιλογής (μία σωστή)";
-    if (t === QuestionType.FILL_BLANKS) return "Συμπλήρωση Κενών (ο χρήστης επιλέγει τη σωστή λέξη)";
+    if (t === QuestionType.TRUE_FALSE) return "Σωστό/Λάθος (Η απάντηση ΠΡΕΠΕΙ να είναι ['Σωστό'] ή ['Λάθος'])";
+    if (t === QuestionType.MULTIPLE_CHOICE) return "Πολλαπλής Επιλογής (Μπορεί να έχει μία ή περισσότερες σωστές απαντήσεις)";
+    if (t === QuestionType.SINGLE_CHOICE) return "Μοναδικής Επιλογής (Ακριβώς μία σωστή απάντηση)";
+    if (t === QuestionType.FILL_BLANKS) return "Συμπλήρωση Κενών (Ο χρήστης επιλέγει τη σωστή λέξη για το κενό [____])";
     return t;
   }).join(", ");
 
@@ -25,10 +25,10 @@ export const generateQuizQuestions = async (
     "${content}"
     
     Σημαντικοί Κανόνες:
-    1. Για τον τύπο TRUE_FALSE, το πεδίο correctAnswer ΠΡΕΠΕΙ να είναι είτε "Σωστό" είτε "Λάθος" (στα ελληνικά). Μην χρησιμοποιήσεις "True", "False" ή "Yes", "No".
-    2. Επίστρεψε τις ερωτήσεις σε μορφή JSON. 
-    3. Για τον τύπο FILL_BLANKS, χρησιμοποίησε το σύμβολο [____] στο κείμενο της ερώτησης εκεί που πρέπει να γίνει η συμπλήρωση.
-    4. Η απάντηση για το FILL_BLANKS πρέπει να είναι μία από τις επιλογές (options).
+    1. Το πεδίο correctAnswer ΠΡΕΠΕΙ να είναι ΠΙΝΑΚΑΣ (ARRAY) από strings, ακόμη και αν υπάρχει μόνο μία σωστή απάντηση.
+    2. Για τον τύπο TRUE_FALSE, το correctAnswer πρέπει να είναι ["Σωστό"] ή ["Λάθος"].
+    3. Για τον τύπο MULTIPLE_CHOICE, συμπεριέλαβε στον πίνακα όλες τις ορθές επιλογές.
+    4. Επίστρεψε τις ερωτήσεις αυστηρά σε μορφή JSON. 
   `;
 
   const response = await ai.models.generateContent({
@@ -52,8 +52,9 @@ export const generateQuizQuestions = async (
               items: { type: Type.STRING } 
             },
             correctAnswer: { 
-              type: Type.STRING,
-              description: "Η σωστή απάντηση. Για TRUE_FALSE πρέπει να είναι 'Σωστό' ή 'Λάθος'."
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description: "Λίστα με τις σωστές απαντήσεις. Πάντα πίνακας."
             },
             explanation: { type: Type.STRING }
           },
@@ -68,6 +69,6 @@ export const generateQuizQuestions = async (
     return JSON.parse(text);
   } catch (error) {
     console.error("Failed to parse Gemini response:", error);
-    throw new Error("Σφάλμα κατά τη δημιουργία των ερωτήσεων.");
+    throw new Error("Σφάλμα κατά τη δημιουργία των ερωτήσεων. Δοκιμάστε ξανά.");
   }
 };

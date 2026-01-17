@@ -13,9 +13,14 @@ const App: React.FC = () => {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [apiKeyMissing, setApiKeyMissing] = useState(false);
 
-  // Load data on start
   useEffect(() => {
+    // Έλεγχος αν υπάρχει το API Key
+    if (!process.env.API_KEY) {
+      setApiKeyMissing(true);
+    }
+
     const savedLessons = localStorage.getItem('qm_lessons');
     const savedUser = localStorage.getItem('qm_user');
     
@@ -36,12 +41,18 @@ const App: React.FC = () => {
     setLoading(false);
   }, []);
 
-  // Save lessons to localStorage whenever they change
   useEffect(() => {
     if (!loading) {
       localStorage.setItem('qm_lessons', JSON.stringify(lessons));
     }
   }, [lessons, loading]);
+
+  const handleOpenKeyDialog = async () => {
+    if (window.aistudio?.openSelectKey) {
+      await window.aistudio.openSelectKey();
+      window.location.reload(); // Ανανέωση για να πάρει το νέο κλειδί
+    }
+  };
 
   const handleLogin = (userData: User) => {
     setUser(userData);
@@ -75,7 +86,19 @@ const App: React.FC = () => {
 
   return (
     <HashRouter>
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col relative">
+        {apiKeyMissing && (
+          <div className="bg-amber-600 text-white p-2 text-center text-xs font-bold z-[100] flex justify-center items-center gap-4">
+            <span>Απαιτείται API Key για τη λειτουργία του AI.</span>
+            <button 
+              onClick={handleOpenKeyDialog}
+              className="bg-white text-amber-600 px-3 py-1 rounded-full hover:bg-amber-50 transition-colors"
+            >
+              Επιλογή Κλειδιού
+            </button>
+          </div>
+        )}
+        
         <Navbar user={user} onLogout={handleLogout} />
         
         <main className="flex-grow container mx-auto px-4 py-8">

@@ -41,7 +41,6 @@ const QuizTaking: React.FC<QuizTakingProps> = ({ lessons }) => {
     const currentAnswers = answers[currentQuestion.id];
 
     if (currentQuestion.type === QuestionType.MULTIPLE_CHOICE) {
-      // Λογική για πολλαπλή επιλογή (array)
       let selectedList = Array.isArray(currentAnswers) ? [...currentAnswers] : [];
       if (selectedList.includes(answer)) {
         selectedList = selectedList.filter(a => a !== answer);
@@ -50,7 +49,6 @@ const QuizTaking: React.FC<QuizTakingProps> = ({ lessons }) => {
       }
       setAnswers({ ...answers, [currentQuestion.id]: selectedList });
     } else {
-      // Λογική για μοναδική επιλογή
       setAnswers({ ...answers, [currentQuestion.id]: answer });
     }
   };
@@ -67,29 +65,19 @@ const QuizTaking: React.FC<QuizTakingProps> = ({ lessons }) => {
   const calculateScore = () => {
     let correctCount = 0;
     quiz.questions.forEach(q => {
-      let userAnswer = answers[q.id];
-      let correctAnswer = q.correctAnswer;
+      const userAnswer = answers[q.id];
+      const correctAnswer = q.correctAnswer; // Πλέον αναμένουμε πίνακα από το API
 
       if (q.type === QuestionType.MULTIPLE_CHOICE) {
-        // Σύγκριση πινάκων για πολλαπλή επιλογή
         const userArr = Array.isArray(userAnswer) ? [...userAnswer].sort() : (userAnswer ? [userAnswer].sort() : []);
         const correctArr = Array.isArray(correctAnswer) ? [...correctAnswer].sort() : (correctAnswer ? [correctAnswer].sort() : []);
         if (userArr.length > 0 && JSON.stringify(userArr) === JSON.stringify(correctArr)) {
           correctCount++;
         }
-      } else if (q.type === QuestionType.TRUE_FALSE) {
-        const normalize = (val: any) => {
-          if (typeof val !== 'string') return val;
-          const s = val.toLowerCase().trim();
-          if (s === 'true' || s === 'yes' || s === 'correct') return 'Σωστό';
-          if (s === 'false' || s === 'no' || s === 'incorrect') return 'Λάθος';
-          return val;
-        };
-        if (normalize(userAnswer) === normalize(correctAnswer)) {
-          correctCount++;
-        }
       } else {
-        if (userAnswer === correctAnswer) {
+        // Για μοναδική επιλογή ή Σ/Λ, συγκρίνουμε την επιλογή με το πρώτο στοιχείο του πίνακα σωστών
+        const singleCorrect = Array.isArray(correctAnswer) ? correctAnswer[0] : correctAnswer;
+        if (userAnswer === singleCorrect) {
           correctCount++;
         }
       }
@@ -104,13 +92,10 @@ const QuizTaking: React.FC<QuizTakingProps> = ({ lessons }) => {
           <span className="text-4xl font-black">{score}%</span>
         </div>
         <h2 className="text-3xl font-bold text-slate-900 mb-4">Το κουίζ ολοκληρώθηκε!</h2>
-        <p className="text-slate-500 mb-8">
-          Συγχαρητήρια για την προσπάθειά σου. Μπορείς να επιστρέψεις στο μάθημα για περισσότερη μελέτη.
-        </p>
         <div className="space-y-4">
           <Link 
             to={`/classroom/${lessonId}`} 
-            className="block w-full bg-blue-600 text-white py-4 rounded-2xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-100"
+            className="block w-full bg-blue-600 text-white py-4 rounded-2xl font-bold hover:bg-blue-700 transition-all shadow-lg"
           >
             Επιστροφή στο Μάθημα
           </Link>
@@ -144,20 +129,14 @@ const QuizTaking: React.FC<QuizTakingProps> = ({ lessons }) => {
           </span>
         </div>
         <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-          <div 
-            className="bg-blue-600 h-full transition-all duration-500" 
-            style={{ width: `${progress}%` }}
-          />
+          <div className="bg-blue-600 h-full transition-all duration-500" style={{ width: `${progress}%` }} />
         </div>
       </div>
 
       <div className="bg-white p-8 md:p-10 rounded-3xl border shadow-sm space-y-8">
-        <h2 className="text-2xl font-bold text-slate-800 leading-tight">
-          {currentQuestion.text}
-        </h2>
+        <h2 className="text-2xl font-bold text-slate-800 leading-tight">{currentQuestion.text}</h2>
 
         <div className="space-y-3">
-          {/* Επιλογές για όλους τους τύπους εκτός TRUE_FALSE */}
           {currentQuestion.type !== QuestionType.TRUE_FALSE && currentQuestion.options?.map((option, idx) => {
             const isSelected = currentQuestion.type === QuestionType.MULTIPLE_CHOICE
               ? (Array.isArray(userSelection) && userSelection.includes(option))
@@ -168,20 +147,15 @@ const QuizTaking: React.FC<QuizTakingProps> = ({ lessons }) => {
                 key={idx}
                 onClick={() => handleAnswerSelect(option)}
                 className={`w-full text-left p-4 rounded-2xl border-2 transition-all flex items-center gap-4 ${
-                  isSelected 
-                    ? 'border-blue-600 bg-blue-50 text-blue-900 ring-4 ring-blue-50' 
-                    : 'border-slate-100 bg-slate-50 hover:border-slate-300 text-slate-700'
+                  isSelected ? 'border-blue-600 bg-blue-50 text-blue-900 shadow-sm' : 'border-slate-100 bg-slate-50 hover:border-slate-200 text-slate-700'
                 }`}
               >
                 <div className={`w-6 h-6 border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-                  isSelected ? 'border-blue-600 bg-blue-600 shadow-sm' : 'border-slate-300'
+                  isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-300'
                 } ${currentQuestion.type === QuestionType.MULTIPLE_CHOICE ? 'rounded-md' : 'rounded-full'}`}>
                   {isSelected && (
-                    <div className={currentQuestion.type === QuestionType.MULTIPLE_CHOICE 
-                      ? "text-white text-[10px] font-bold" 
-                      : "w-2 h-2 bg-white rounded-full"
-                    }>
-                      {currentQuestion.type === QuestionType.MULTIPLE_CHOICE ? "✓" : ""}
+                    <div className="text-white text-[10px] font-bold">
+                      {currentQuestion.type === QuestionType.MULTIPLE_CHOICE ? "✓" : "•"}
                     </div>
                   )}
                 </div>
@@ -190,7 +164,6 @@ const QuizTaking: React.FC<QuizTakingProps> = ({ lessons }) => {
             );
           })}
 
-          {/* Ειδική εμφάνιση για Σωστό / Λάθος */}
           {currentQuestion.type === QuestionType.TRUE_FALSE && (
             <div className="grid grid-cols-2 gap-4">
               {['Σωστό', 'Λάθος'].map((val) => {
@@ -200,9 +173,7 @@ const QuizTaking: React.FC<QuizTakingProps> = ({ lessons }) => {
                     key={val}
                     onClick={() => handleAnswerSelect(val)}
                     className={`p-6 rounded-2xl border-2 font-bold transition-all text-center ${
-                      isSelected 
-                        ? 'border-blue-600 bg-blue-50 text-blue-900 ring-4 ring-blue-50' 
-                        : 'border-slate-100 bg-slate-50 hover:border-slate-300 text-slate-700'
+                      isSelected ? 'border-blue-600 bg-blue-50 text-blue-900 shadow-sm' : 'border-slate-100 bg-slate-50 hover:border-slate-200 text-slate-700'
                     }`}
                   >
                     {val}
@@ -216,22 +187,11 @@ const QuizTaking: React.FC<QuizTakingProps> = ({ lessons }) => {
         <button
           onClick={handleNext}
           disabled={!isAnswered}
-          className={`w-full py-4 rounded-2xl font-bold transition-all shadow-lg flex items-center justify-center ${
-            isAnswered 
-              ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-100 active:scale-[0.98]' 
-              : 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
+          className={`w-full py-4 rounded-2xl font-bold transition-all shadow-md ${
+            isAnswered ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-slate-100 text-slate-400 cursor-not-allowed'
           }`}
         >
           {currentQuestionIndex === quiz.questions.length - 1 ? 'Ολοκλήρωση' : 'Επόμενη Ερώτηση'}
-        </button>
-      </div>
-      
-      <div className="mt-8 text-center">
-        <button 
-          onClick={() => { if(confirm('Θέλετε να εγκαταλείψετε το κουίζ;')) navigate(`/classroom/${lessonId}`); }}
-          className="text-slate-400 hover:text-slate-600 text-sm font-medium"
-        >
-          Εγκατάλειψη κουίζ
         </button>
       </div>
     </div>
